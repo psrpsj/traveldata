@@ -5,7 +5,14 @@ import wandb
 
 from argument import TrainingCat1Arguments, TrainCat1ModelArguments
 from sklearn.metrics import accuracy_score
-from transformers import AutoConfig, AutoTokenizer, HfArgumentParser, set_seed
+from sklearn.model_selection import train_test_split
+from transformers import (
+    AutoConfig,
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    HfArgumentParser,
+    set_seed,
+)
 
 
 def compute_meterics(pred):
@@ -33,4 +40,23 @@ def train_cat1():
     set_seed(training_args.seed)
     model_config = AutoConfig.from_pretrained(
         pretrained_model_name_or_path=model_args.model_name
+    )
+    model_config.num_labels = 6
+    model = AutoModelForSequenceClassification.from_pretrained(
+        model_args.model_name, config=model_config
+    )
+    model.resize_token_embeddings(len(tokenizer))
+    model.to(device)
+    model.train()
+
+    wandb.init(
+        entity="psrpsj",
+        project="traveldata",
+        name=model_args.project_name,
+        tags=model_args.model_name,
+    )
+    wandb.config.update(training_args)
+
+    train_dataset, valid_dataset = train_test_split(
+        data, test_size=0.2, stratify=label, random_state=42
     )
