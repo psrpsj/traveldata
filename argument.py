@@ -26,4 +26,4 @@ class TrainCat1ModelArguments:
     model_name: str = field(default="klue/bert-base")
     loss_name: str = field(default="focal")
     project_cat1_name: str = field(default="cat1_nlp")
-    data_path
+    data_path: str = field(default="./data/")
