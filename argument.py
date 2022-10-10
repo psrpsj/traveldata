@@ -4,7 +4,7 @@ from transformers import TrainingArguments
 
 @dataclass
 class TrainingCat1Arguments(TrainingArguments):
-    output_dir: str = field(default="./output/cat1")
+    output_dir: str = field(default="./output/")
     num_train_epochs: int = field(default=5)
     per_device_train_batch_size: int = field(default=8)
     overwrite_output_dir: bool = field(default=True)
