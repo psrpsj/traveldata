@@ -5,6 +5,7 @@ import wandb
 
 from argument import TrainingCat1Arguments, TrainCat1ModelArguments
 from dataset import CustomDataset
+from sklearn import preprocessing
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from trainer import CustomTrainer
@@ -34,8 +35,9 @@ def train_cat1():
     print(f"Current device is {device}")
 
     data = pd.read_csv(os.path.join(model_args.data_path, "train.csv"))
-    desc = data["overview"]
-    label = data["cat1"]
+    label = preprocessing.LabelEncoder()
+    label.fit(data["cat1"])
+    data["cat1"] = label.transform(data["cat1"])
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_args.model_name
     )
@@ -54,13 +56,13 @@ def train_cat1():
     wandb.init(
         entity="psrpsj",
         project="traveldata",
-        name=model_args.project_name,
+        name=model_args.project_cat1_name,
         tags=model_args.model_name,
     )
     wandb.config.update(training_args)
 
     train_dataset, valid_dataset = train_test_split(
-        data, test_size=0.2, stratify=label, random_state=42
+        data, test_size=0.2, stratify=data["cat1"], random_state=42
     )
     train = CustomDataset(train_dataset["overview"], train_dataset["cat1"], tokenizer)
     valid = CustomDataset(valid_dataset["overview"], valid_dataset["cat1"], tokenizer)
@@ -76,7 +78,7 @@ def train_cat1():
 
     print("--- CAT1 NLP TRAINING ---")
     trainer.train()
-    model.save_pretrained(training_args.output_dir + model_args.project_name)
+    model.save_pretrained(training_args.output_dir + model_args.project_cat1_name)
     wandb.finish()
     print("--- CAT1 NLP TRAINING FINISH ---")
 
