@@ -16,6 +16,7 @@ from transformers import (
     HfArgumentParser,
     set_seed,
 )
+from utils import label_to_num
 
 
 def compute_metrics(pred):
@@ -35,9 +36,7 @@ def train_cat1():
     print(f"Current device is {device}")
 
     data = pd.read_csv(os.path.join(model_args.data_path, "train.csv"))
-    label = preprocessing.LabelEncoder()
-    label.fit(data["cat1"])
-    data["cat1"] = label.transform(data["cat1"])
+    data["cat1"] = label_to_num(data["cat1"], 1)
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_args.model_name
     )
