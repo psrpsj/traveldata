@@ -30,7 +30,7 @@ def train_cat1():
     (training_args, model_args) = parser.parse_args_into_dataclasses()
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-    print("### Training Model for Cat 1 ###")
+    print("### Training NLP Model for Cat 1 ###")
     print(f"Current Model is {model_args.model_name}")
     print(f"Current device is {device}")
 
