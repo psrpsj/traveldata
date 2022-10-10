@@ -77,7 +77,9 @@ def train_cat1():
 
     print("--- CAT1 NLP TRAINING ---")
     trainer.train()
-    model.save_pretrained(training_args.output_dir + model_args.project_cat1_name)
+    model.save_pretrained(
+        os.path.join(training_args.output_dir, model_args.project_cat1_name)
+    )
     wandb.finish()
     print("--- CAT1 NLP TRAINING FINISH ---")
 
