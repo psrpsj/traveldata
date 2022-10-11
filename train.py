@@ -10,7 +10,6 @@ from argument import (
     TrainCat2NLPModelArguments,
 )
 from dataset import CustomDataset
-from sklearn import preprocessing
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from trainer import CustomTrainer
@@ -130,7 +129,7 @@ def train_cat2_nlp():
     valid = CustomDataset(valid_dataset["overview"], valid_dataset["cat2"], tokenizer)
 
     trainer = CustomTrainer(
-        loss_name - model_args.loss_name,
+        loss_name=model_args.loss_name,
         model=model,
         args=training_args,
         train_dataset=train,
@@ -138,9 +137,18 @@ def train_cat2_nlp():
         compute_metrics=compute_metrics,
     )
 
+    print("--- CAT2 NLP TRAINING ---")
+    trainer.train()
+    model.save_pretrained(
+        os.path.join(training_args.output_dir, model_args.project_cat2_name)
+    )
+    wandb.finish()
+    print("--- CAT2 NLP TRAINING FINISH ---")
+
 
 def main():
     train_cat1_nlp()
+    train_cat2_nlp()
 
 
 if __name__ == "__main__":
