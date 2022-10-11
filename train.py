@@ -91,7 +91,7 @@ def train_cat1_nlp():
 def train_cat2_nlp():
     parser = HfArgumentParser((TrainingCat2NLPArguments, TrainCat2NLPModelArguments))
     (training_args, model_args) = parser.parse_args_into_dataclasses()
-    device = torch.device("cuda") if torch.cuda.is_avaliable() else torch.device("cpu")
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     print("### Training NLP Model for Cat 2 ###")
     print(f"Current Model is {model_args.model_name}")
