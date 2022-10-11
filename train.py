@@ -98,10 +98,13 @@ def train_cat2_nlp():
     print(f"Current device is {device}")
 
     data = pd.read_csv(os.path.join(model_args.data_path, "train.csv"))
+    data["overview"] = data["overview"] + "[RELATION]" + data["cat1"]
     data["cat2"] = label_to_num(data["cat2"], 2)
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_args.model_name
     )
+    special_tokens_dict = {"additional_special_tokens": ["[RELATION]"]}
+    tokenizer.add_special_tokens(special_tokens_dict)
     set_seed(training_args.seed)
     model_config = AutoConfig.from_pretrained(
         pretrained_model_name_or_path=model_args.model_name
