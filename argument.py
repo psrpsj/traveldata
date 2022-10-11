@@ -12,6 +12,7 @@ class TrainingCat1Arguments(TrainingArguments):
     evaluation_strategy: str = field(default="steps")
     save_strategy: str = field(default="steps")
     metric_for_best_model: str = field(default="accuracy")
+    save_total_limit: int = field(default=5)
     lr_scheduler_type: str = field(
         default="cosine_with_restarts",
         metadata={
