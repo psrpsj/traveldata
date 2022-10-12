@@ -19,7 +19,7 @@ from utils import num_to_label
 def inference_cat1_nlp(dataset):
     parser = HfArgumentParser(TrainCat1NLPModelArguments)
     (model_args,) = parser.parse_args_into_dataclasses()
-    device = torch.device("cuda") if torch.cuda.is_avaliable() else torch.device("cpu")
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name)
 
     dataset["cat1"] = [-1] * len(dataset)
@@ -51,10 +51,18 @@ def inference_cat1_nlp(dataset):
 
     pred_answer = np.concatenate(output_pred).tolist()
     output_prob = np.concatenate(output_prob, axis=0).tolist()
-    dataset["cat1"] = num_to_label(pred_answer, 1)
-    dataset.to_csv("./data/test_fix.csv", index=False)
+    output = pd.DataFrame(
+        {
+            "id": dataset["id"],
+            "img_path": dataset["img_path"],
+            "overview": dataset["overview"],
+            "cat1": pred_answer,
+        }
+    )
+    output["cat1"] = num_to_label(output["cat1"], 1)
+    output.to_csv("./data/test_fix.csv", index=False)
     print("### Inference for CAT1 NLP Finish! ###")
-    return dataset
+    return output
 
 
 def inference_cat2_nlp(dataset):
@@ -94,10 +102,19 @@ def inference_cat2_nlp(dataset):
 
     pred_answer = np.concatenate(output_pred).tolist()
     output_prob = np.concatenate(output_prob, axis=0).tolist()
-    dataset["cat2"] = num_to_label(pred_answer, 2)
-    dataset.to_csv("./data/test_fix.csv", index=False)
+    output = pd.DataFrame(
+        {
+            "id": dataset["id"],
+            "img_path": dataset["img_path"],
+            "overview": dataset["overview"],
+            "cat1": dataset["cat1"],
+            "cat2": pred_answer,
+        }
+    )
+    output["cat2"] = num_to_label(output["cat2"], 2)
+    output.to_csv("./data/test_fix.csv", index=False)
     print("### Inference for CAT2 NLP Finish! ###")
-    return dataset
+    return output
 
 
 def main():
