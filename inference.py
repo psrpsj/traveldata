@@ -8,7 +8,7 @@ from argument import TrainCat1NLPModelArguments, TrainCat2NLPModelArguments
 from dataset import CustomDataset
 from torch.utils.data import DataLoader
 from transformers import (
-    AutoModel,
+    AutoModelForSequenceClassification,
     AutoTokenizer,
     HfArgumentParser,
 )
@@ -27,7 +27,7 @@ def inference_cat1_nlp(dataset):
     dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
     model_path = os.path.join("./output/", model_args.project_cat1_name)
-    model = AutoModel.from_pretrained(model_path)
+    model = AutoModelForSequenceClassification.from_pretrained(model_path)
     model.resize_token_embeddings(len(tokenizer))
     model.to(device)
     model.eval()
@@ -51,24 +51,16 @@ def inference_cat1_nlp(dataset):
 
     pred_answer = np.concatenate(output_pred).tolist()
     output_prob = np.concatenate(output_prob, axis=0).tolist()
-    output = pd.DataFrame(
-        {
-            "id": dataset["id"],
-            "img_path": dataset["img_path"],
-            "overview": dataset["overview"],
-            "cat1": pred_answer,
-        }
-    )
-    output["cat1"] = num_to_label(output["cat1"], 1)
-    output.to_csv("./data/test_fix.csv", index=False)
+    dataset["cat1"] = num_to_label(pred_answer, 1)
+    dataset.to_csv("./data/test_fix.csv", index=False)
     print("### Inference for CAT1 NLP Finish! ###")
-    return output
+    return dataset
 
 
 def inference_cat2_nlp(dataset):
     parser = HfArgumentParser(TrainCat2NLPModelArguments)
     (model_args,) = parser.parse_args_into_dataclasses()
-    device = torch.device("cuda") if torch.cuda.is_avaliable() else torch.device("cpu")
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name)
     special_tokens_dict = {"additional_special_tokens": ["[RELATION]"]}
     tokenizer.add_special_tokens(special_tokens_dict)
@@ -79,8 +71,8 @@ def inference_cat2_nlp(dataset):
     dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
     model_path = os.path.join("./output/", model_args.project_cat2_name)
-    model = AutoModel.from_pretrained(model_path)
-    model.resize_token_embedding(len(tokenizer))
+    model = AutoModelForSequenceClassification.from_pretrained(model_path)
+    model.resize_token_embeddings(len(tokenizer))
     model.to(device)
     model.eval()
 
@@ -102,19 +94,10 @@ def inference_cat2_nlp(dataset):
 
     pred_answer = np.concatenate(output_pred).tolist()
     output_prob = np.concatenate(output_prob, axis=0).tolist()
-    output = pd.DataFrame(
-        {
-            "id": dataset["id"],
-            "img_path": dataset["img_path"],
-            "overview": dataset["overview"],
-            "cat1": dataset["cat1"],
-            "cat2": pred_answer,
-        }
-    )
-    output["cat2"] = num_to_label(output["cat2"], 2)
-    output.to_csv("./data/test_fix.csv", index=False)
+    dataset["cat2"] = num_to_label(pred_answer, 2)
+    dataset.to_csv("./data/test_fix.csv", index=False)
     print("### Inference for CAT2 NLP Finish! ###")
-    return output
+    return dataset
 
 
 def main():
