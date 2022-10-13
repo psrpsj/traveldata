@@ -17,7 +17,7 @@ from transformers import (
     HfArgumentParser,
 )
 from tqdm import tqdm
-from utils import num_to_label
+from utils import num_to_label, preprocess_nlp
 
 
 def inference_cat1_nlp(dataset):
@@ -156,6 +156,7 @@ def inference_cat3_nlp(dataset):
 
 def main():
     dataset = pd.read_csv("./data/test.csv")
+    dataset = preprocess_nlp(dataset)
     if "cat1" not in dataset.columns.tolist():
         dataset = inference_cat1_nlp(dataset)
     if "cat2" not in dataset.columns.tolist():
