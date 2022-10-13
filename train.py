@@ -22,7 +22,7 @@ from transformers import (
     HfArgumentParser,
     set_seed,
 )
-from utils import label_to_num
+from utils import label_to_num, preprocess_nlp
 
 
 def compute_metrics(pred):
@@ -32,7 +32,7 @@ def compute_metrics(pred):
     return {"accuracy": acc}
 
 
-def train_cat1_nlp():
+def train_cat1_nlp(data):
     parser = HfArgumentParser((TrainingCat1NLPArguments, TrainCat1NLPModelArguments))
     (training_args, model_args) = parser.parse_args_into_dataclasses()
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -41,7 +41,6 @@ def train_cat1_nlp():
     print(f"Current Model is {model_args.model_name}")
     print(f"Current device is {device}")
 
-    data = pd.read_csv(os.path.join(model_args.data_path, "train.csv"))
     data["cat1"] = label_to_num(data["cat1"], 1)
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_args.model_name
@@ -90,7 +89,7 @@ def train_cat1_nlp():
     print("--- CAT1 NLP TRAINING FINISH ---")
 
 
-def train_cat2_nlp():
+def train_cat2_nlp(data):
     parser = HfArgumentParser((TrainingCat2NLPArguments, TrainCat2NLPModelArguments))
     (training_args, model_args) = parser.parse_args_into_dataclasses()
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -99,7 +98,6 @@ def train_cat2_nlp():
     print(f"Current Model is {model_args.model_name}")
     print(f"Current device is {device}")
 
-    data = pd.read_csv(os.path.join(model_args.data_path, "train.csv"))
     data["overview"] = data["overview"] + "[RELATION]" + data["cat1"]
     data["cat2"] = label_to_num(data["cat2"], 2)
     tokenizer = AutoTokenizer.from_pretrained(
@@ -151,7 +149,7 @@ def train_cat2_nlp():
     print("--- CAT2 NLP TRAINING FINISH ---")
 
 
-def train_cat3_nlp():
+def train_cat3_nlp(data):
     parser = HfArgumentParser((TrainingCat3NLPArguments, TrainCat3NLPModelArguments))
     (training_args, model_args) = parser.parse_args_into_dataclasses()
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -160,7 +158,6 @@ def train_cat3_nlp():
     print(f"Current Model is {model_args.model_name}")
     print(f"Current device is {device}")
 
-    data = pd.read_csv(os.path.join(model_args.data_path, "train.csv"))
     data["overview"] = (
         data["overview"] + "[RELATION]" + data["cat1"] + "[RELATION]" + data["cat2"]
     )
@@ -216,12 +213,14 @@ def train_cat3_nlp():
 
 
 def main():
+    dataset = pd.read_csv("./data/train.csv")
+    dataset = preprocess_nlp(dataset)
     if not os.path.exists("./output/cat1_nlp"):
-        train_cat1_nlp()
+        train_cat1_nlp(dataset)
     if not os.path.exists("./output/cat2_nlp"):
-        train_cat2_nlp()
+        train_cat2_nlp(dataset)
 
-    train_cat3_nlp()
+    train_cat3_nlp(dataset)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import pickle
+import re
 
 
 def label_to_num(data, cat_num):
@@ -35,3 +36,12 @@ def num_to_label(data, cat_num):
         label_3 = pickle.load(pkl_3)
         pkl_3.close()
         return label_3.inverse_transform(data)
+
+
+def preprocess_nlp(dataset):
+    for idx in range(len(dataset)):
+        to_fix = dataset["overview"][idx]
+        to_fix = re.sub("<.+?>", "", to_fix)
+        to_fix = re.sub("[^ 가-힣0-9a-zA-Z]", "", to_fix)
+        dataset["overview"][idx] = to_fix
+    return dataset
