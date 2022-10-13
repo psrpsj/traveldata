@@ -123,7 +123,7 @@ def inference_cat3_nlp(dataset):
     test_dataset = CustomDataset(overview_fix, dataset["cat3"], tokenizer)
     dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-    model_path = os.path.join("./output/", model_args.project_cat2_name)
+    model_path = os.path.join("./output/", model_args.project_cat3_name)
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
     model.resize_token_embeddings(len(tokenizer))
     model.to(device)
