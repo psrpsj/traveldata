@@ -12,7 +12,7 @@ from argument import (
     TrainCat3NLPModelArguments,
 )
 from dataset import CustomDataset
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 from trainer import CustomTrainer
 from transformers import (
@@ -29,7 +29,8 @@ def compute_metrics(pred):
     label = pred.label_ids
     preds = pred.predictions.argmax(-1)
     acc = accuracy_score(label, preds)
-    return {"accuracy": acc}
+    f1 = f1_score(label, preds, average="weighted")
+    return {"accuracy": acc, "f1_score": f1}
 
 
 def train_cat1_nlp(data):
