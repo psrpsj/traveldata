@@ -8,6 +8,8 @@ from argument import (
     TrainCat1NLPModelArguments,
     TrainingCat2NLPArguments,
     TrainCat2NLPModelArguments,
+    TrainingCat3NLPArguments,
+    TrainCat3NLPModelArguments,
 )
 from dataset import CustomDataset
 from sklearn.metrics import accuracy_score
@@ -60,7 +62,7 @@ def train_cat1_nlp():
         entity="psrpsj",
         project="traveldata",
         name=model_args.project_cat1_name,
-        tags=model_args.model_name,
+        tags=[model_args.model_name],
     )
     wandb.config.update(training_args)
 
@@ -121,7 +123,7 @@ def train_cat2_nlp():
         entity="psrpsj",
         project="traveldata",
         name=model_args.project_cat2_name,
-        tags=model_args.model_name,
+        tags=[model_args.model_name],
     )
     wandb.config.update(training_args)
 
@@ -149,9 +151,77 @@ def train_cat2_nlp():
     print("--- CAT2 NLP TRAINING FINISH ---")
 
 
+def train_cat3_nlp():
+    parser = HfArgumentParser((TrainingCat3NLPArguments, TrainCat3NLPModelArguments))
+    (training_args, model_args) = parser.parse_args_into_dataclasses()
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+    print("### Training NLP Model for Cat 3 ###")
+    print(f"Current Model is {model_args.model_name}")
+    print(f"Current device is {device}")
+
+    data = pd.read_csv(os.path.join(model_args.data_path, "train.csv"))
+    data["overview"] = (
+        data["overview"] + "[RELATION]" + data["cat1"] + "[RELATION]" + data["cat2"]
+    )
+    data["cat3"] = label_to_num(data["cat3"], 3)
+    tokenizer = AutoTokenizer.from_pretrained(
+        pretrained_model_name_or_path=model_args.model_name
+    )
+    special_tokens_dict = {"additional_special_tokens": ["[RELATION]"]}
+    tokenizer.add_special_tokens(special_tokens_dict)
+    set_seed(training_args.seed)
+    model_config = AutoConfig.from_pretrained(
+        pretrained_model_name_or_path=model_args.model_name
+    )
+    model_config.num_labels = 128
+    model = AutoModelForSequenceClassification.from_pretrained(
+        model_args.model_name, config=model_config
+    )
+    model.resize_token_embeddings(len(tokenizer))
+    model.to(device)
+    model.train()
+
+    wandb.init(
+        entity="psrpsj",
+        project="traveldata",
+        name=model_args.project_cat3_name,
+        tags=[model_args.model_name],
+    )
+    wandb.config.update(training_args)
+
+    train_dataset, valid_dataset = train_test_split(
+        data, test_size=0.2, stratify=data["cat3"], random_state=42
+    )
+
+    train = CustomDataset(train_dataset["overview"], train_dataset["cat3"], tokenizer)
+    valid = CustomDataset(valid_dataset["overview"], valid_dataset["cat3"], tokenizer)
+
+    trainer = CustomTrainer(
+        loss_name=model_args.loss_name,
+        model=model,
+        args=training_args,
+        train_dataset=train,
+        eval_dataset=valid,
+        compute_metrics=compute_metrics,
+    )
+
+    print("--- CAT3 NLP TRAINING ---")
+    trainer.train()
+    model.save_pretrained(
+        os.path.join(training_args.output_dir, model_args.project_cat3_name)
+    )
+    wandb.finish()
+    print("--- CAT3 NLP TRAINING FINISH ---")
+
+
 def main():
-    train_cat1_nlp()
-    train_cat2_nlp()
+    if not os.path.exists("./output/cat_nlp1"):
+        train_cat1_nlp()
+    if not os.path.exists("./output/cat_nlp2"):
+        train_cat2_nlp()
+
+    train_cat3_nlp()
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ class CustomDataset(Dataset):
             padding=True,
             truncation=True,
             max_length=128,
+            add_special_tokens=True,
         )
 
     def __getitem__(self, idx):
