@@ -216,9 +216,9 @@ def train_cat3_nlp():
 
 
 def main():
-    if not os.path.exists("./output/cat_nlp1"):
+    if not os.path.exists("./output/cat1_nlp"):
         train_cat1_nlp()
-    if not os.path.exists("./output/cat_nlp2"):
+    if not os.path.exists("./output/cat2_nlp"):
         train_cat2_nlp()
 
     train_cat3_nlp()
