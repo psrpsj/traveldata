@@ -1,8 +1,9 @@
+import pandas as pd
 import pickle
 import re
 
 
-def label_to_num(data, cat_num):
+def label_to_num(data: pd.Series, cat_num: int) -> pd.Series:
     if cat_num == 1:
         pkl_1 = open("cat1_label.pkl", "rb")
         label_1 = pickle.load(pkl_1)
