@@ -68,8 +68,8 @@ def train_cat1_nlp(data):
     train_dataset, valid_dataset = train_test_split(
         data, test_size=0.2, stratify=data["cat1"], random_state=42
     )
-    train_dataset["cat1"] = preprocess_nlp(train_dataset["cat1"], 1)
-    valid_dataset["cat1"] = preprocess_nlp(valid_dataset["cat1"], 1)
+    train_dataset["cat1"] = label_to_num(train_dataset["cat1"], 1)
+    valid_dataset["cat1"] = label_to_num(valid_dataset["cat1"], 1)
     train = CustomDataset(train_dataset["overview"], train_dataset["cat1"], tokenizer)
     valid = CustomDataset(valid_dataset["overview"], valid_dataset["cat1"], tokenizer)
 

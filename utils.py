@@ -2,6 +2,8 @@ import pandas as pd
 import pickle
 import re
 
+from tqdm import tqdm
+
 
 def label_to_num(data: pd.Series, cat_num: int) -> pd.Series:
     if cat_num == 1:
@@ -21,7 +23,7 @@ def label_to_num(data: pd.Series, cat_num: int) -> pd.Series:
         return label_3.transform(data)
 
 
-def num_to_label(data, cat_num):
+def num_to_label(data: pd.Series, cat_num: int) -> pd.Series:
     if cat_num == 1:
         pkl_1 = open("cat1_label.pkl", "rb")
         label_1 = pickle.load(pkl_1)
@@ -39,8 +41,9 @@ def num_to_label(data, cat_num):
         return label_3.inverse_transform(data)
 
 
-def preprocess_nlp(dataset):
-    for idx in range(len(dataset)):
+def preprocess_nlp(dataset: pd.DataFrame) -> pd.DataFrame:
+    print("### Start Preprocess for Overview ###")
+    for idx in tqdm(range(len(dataset))):
         to_fix = dataset["overview"][idx]
         to_fix = re.sub("<.+?>", "", to_fix)
         to_fix = re.sub("[^ 가-힣0-9a-zA-Z]", "", to_fix)
