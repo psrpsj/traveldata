@@ -15,7 +15,7 @@ class TrainingCat1NLPArguments(TrainingArguments):
     evaluation_strategy: str = field(default="steps")
     eval_steps: int = field(default=500)
     save_strategy: str = field(default="steps")
-    metric_for_best_model: str = field(default="accuracy")
+    metric_for_best_model: str = field(default="f1_score")
     save_total_limit: int = field(default=5)
     lr_scheduler_type: str = field(
         default="cosine_with_restarts",
@@ -47,7 +47,7 @@ class TrainingCat2NLPArguments(TrainingArguments):
     evaluation_strategy: str = field(default="steps")
     eval_steps: int = field(default=500)
     save_strategy: str = field(default="steps")
-    metric_for_best_model: str = field(default="accuracy")
+    metric_for_best_model: str = field(default="f1_score")
     save_total_limit: int = field(default=5)
     lr_scheduler_type: str = field(
         default="cosine_with_restarts",
@@ -79,7 +79,7 @@ class TrainingCat3NLPArguments(TrainingArguments):
     evaluation_strategy: str = field(default="steps")
     eval_steps: int = field(default=500)
     save_strategy: str = field(default="steps")
-    metric_for_best_model: str = field(default="accuracy")
+    metric_for_best_model: str = field(default="f1_score")
     save_total_limit: int = field(default=5)
     lr_scheduler_type: str = field(
         default="cosine_with_restarts",

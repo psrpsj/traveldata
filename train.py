@@ -12,7 +12,7 @@ from argument import (
     TrainCat3NLPModelArguments,
 )
 from dataset import CustomDataset
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 from trainer import CustomTrainer
 from transformers import (
@@ -22,17 +22,18 @@ from transformers import (
     HfArgumentParser,
     set_seed,
 )
-from utils import label_to_num
+from utils import label_to_num, preprocess_nlp
 
 
 def compute_metrics(pred):
     label = pred.label_ids
     preds = pred.predictions.argmax(-1)
     acc = accuracy_score(label, preds)
-    return {"accuracy": acc}
+    f1 = f1_score(label, preds, average="weighted")
+    return {"accuracy": acc, "f1_score": f1}
 
 
-def train_cat1_nlp():
+def train_cat1_nlp(data):
     parser = HfArgumentParser((TrainingCat1NLPArguments, TrainCat1NLPModelArguments))
     (training_args, model_args) = parser.parse_args_into_dataclasses()
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -41,8 +42,6 @@ def train_cat1_nlp():
     print(f"Current Model is {model_args.model_name}")
     print(f"Current device is {device}")
 
-    data = pd.read_csv(os.path.join(model_args.data_path, "train.csv"))
-    data["cat1"] = label_to_num(data["cat1"], 1)
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_args.model_name
     )
@@ -69,6 +68,8 @@ def train_cat1_nlp():
     train_dataset, valid_dataset = train_test_split(
         data, test_size=0.2, stratify=data["cat1"], random_state=42
     )
+    train_dataset["cat1"] = preprocess_nlp(train_dataset["cat1"], 1)
+    valid_dataset["cat1"] = preprocess_nlp(valid_dataset["cat1"], 1)
     train = CustomDataset(train_dataset["overview"], train_dataset["cat1"], tokenizer)
     valid = CustomDataset(valid_dataset["overview"], valid_dataset["cat1"], tokenizer)
 
@@ -90,7 +91,7 @@ def train_cat1_nlp():
     print("--- CAT1 NLP TRAINING FINISH ---")
 
 
-def train_cat2_nlp():
+def train_cat2_nlp(data):
     parser = HfArgumentParser((TrainingCat2NLPArguments, TrainCat2NLPModelArguments))
     (training_args, model_args) = parser.parse_args_into_dataclasses()
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -99,9 +100,6 @@ def train_cat2_nlp():
     print(f"Current Model is {model_args.model_name}")
     print(f"Current device is {device}")
 
-    data = pd.read_csv(os.path.join(model_args.data_path, "train.csv"))
-    data["overview"] = data["overview"] + "[RELATION]" + data["cat1"]
-    data["cat2"] = label_to_num(data["cat2"], 2)
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_args.model_name
     )
@@ -130,6 +128,15 @@ def train_cat2_nlp():
     train_dataset, valid_dataset = train_test_split(
         data, test_size=0.2, stratify=data["cat2"], random_state=42
     )
+    train_dataset["overview"] = (
+        train_dataset["overview"] + "[RELATION]" + train_dataset["cat1"]
+    )
+    valid_dataset["overview"] = (
+        valid_dataset["overview"] + "[RELATION]" + valid_dataset["cat1"]
+    )
+    train_dataset["cat2"] = label_to_num(train_dataset["cat2"], 2)
+    valid_dataset["cat2"] = label_to_num(valid_dataset["cat2"], 2)
+
     train = CustomDataset(train_dataset["overview"], train_dataset["cat2"], tokenizer)
     valid = CustomDataset(valid_dataset["overview"], valid_dataset["cat2"], tokenizer)
 
@@ -151,7 +158,7 @@ def train_cat2_nlp():
     print("--- CAT2 NLP TRAINING FINISH ---")
 
 
-def train_cat3_nlp():
+def train_cat3_nlp(data):
     parser = HfArgumentParser((TrainingCat3NLPArguments, TrainCat3NLPModelArguments))
     (training_args, model_args) = parser.parse_args_into_dataclasses()
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -160,11 +167,6 @@ def train_cat3_nlp():
     print(f"Current Model is {model_args.model_name}")
     print(f"Current device is {device}")
 
-    data = pd.read_csv(os.path.join(model_args.data_path, "train.csv"))
-    data["overview"] = (
-        data["overview"] + "[RELATION]" + data["cat1"] + "[RELATION]" + data["cat2"]
-    )
-    data["cat3"] = label_to_num(data["cat3"], 3)
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_args.model_name
     )
@@ -194,6 +196,23 @@ def train_cat3_nlp():
         data, test_size=0.2, stratify=data["cat3"], random_state=42
     )
 
+    train_dataset["overview"] = (
+        train_dataset["overview"]
+        + "[RELATION]"
+        + train_dataset["cat1"]
+        + "[RELATION]"
+        + train_dataset["cat2"]
+    )
+    valid_dataset["overview"] = (
+        valid_dataset["overview"]
+        + "[RELATION]"
+        + valid_dataset["cat1"]
+        + "[RELATION]"
+        + valid_dataset["cat2"]
+    )
+    train_dataset["cat3"] = label_to_num(train_dataset["cat3"], 3)
+    valid_dataset["cat3"] = label_to_num(valid_dataset["cat3"], 3)
+
     train = CustomDataset(train_dataset["overview"], train_dataset["cat3"], tokenizer)
     valid = CustomDataset(valid_dataset["overview"], valid_dataset["cat3"], tokenizer)
 
@@ -216,12 +235,13 @@ def train_cat3_nlp():
 
 
 def main():
+    dataset = pd.read_csv("./data/train.csv")
+    dataset = preprocess_nlp(dataset)
     if not os.path.exists("./output/cat1_nlp"):
-        train_cat1_nlp()
+        train_cat1_nlp(dataset)
     if not os.path.exists("./output/cat2_nlp"):
-        train_cat2_nlp()
-
-    train_cat3_nlp()
+        train_cat2_nlp(dataset)
+    train_cat3_nlp(dataset)
 
 
 if __name__ == "__main__":
