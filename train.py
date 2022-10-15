@@ -11,7 +11,7 @@ from argument import (
     TrainingCat3NLPArguments,
     TrainCat3NLPModelArguments,
 )
-from dataset import CustomDataset
+from dataset import CustomNLPDataset
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 from trainer import CustomTrainer
@@ -70,8 +70,12 @@ def train_cat1_nlp(data):
     )
     train_dataset["cat1"] = label_to_num(train_dataset["cat1"], 1)
     valid_dataset["cat1"] = label_to_num(valid_dataset["cat1"], 1)
-    train = CustomDataset(train_dataset["overview"], train_dataset["cat1"], tokenizer)
-    valid = CustomDataset(valid_dataset["overview"], valid_dataset["cat1"], tokenizer)
+    train = CustomNLPDataset(
+        train_dataset["overview"], train_dataset["cat1"], tokenizer
+    )
+    valid = CustomNLPDataset(
+        valid_dataset["overview"], valid_dataset["cat1"], tokenizer
+    )
 
     trainer = CustomTrainer(
         loss_name=model_args.loss_name,
@@ -137,8 +141,12 @@ def train_cat2_nlp(data):
     train_dataset["cat2"] = label_to_num(train_dataset["cat2"], 2)
     valid_dataset["cat2"] = label_to_num(valid_dataset["cat2"], 2)
 
-    train = CustomDataset(train_dataset["overview"], train_dataset["cat2"], tokenizer)
-    valid = CustomDataset(valid_dataset["overview"], valid_dataset["cat2"], tokenizer)
+    train = CustomNLPDataset(
+        train_dataset["overview"], train_dataset["cat2"], tokenizer
+    )
+    valid = CustomNLPDataset(
+        valid_dataset["overview"], valid_dataset["cat2"], tokenizer
+    )
 
     trainer = CustomTrainer(
         loss_name=model_args.loss_name,
@@ -213,8 +221,12 @@ def train_cat3_nlp(data):
     train_dataset["cat3"] = label_to_num(train_dataset["cat3"], 3)
     valid_dataset["cat3"] = label_to_num(valid_dataset["cat3"], 3)
 
-    train = CustomDataset(train_dataset["overview"], train_dataset["cat3"], tokenizer)
-    valid = CustomDataset(valid_dataset["overview"], valid_dataset["cat3"], tokenizer)
+    train = CustomNLPDataset(
+        train_dataset["overview"], train_dataset["cat3"], tokenizer
+    )
+    valid = CustomNLPDataset(
+        valid_dataset["overview"], valid_dataset["cat3"], tokenizer
+    )
 
     trainer = CustomTrainer(
         loss_name=model_args.loss_name,

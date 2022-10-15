@@ -9,7 +9,7 @@ from argument import (
     TrainCat2NLPModelArguments,
     TrainCat3NLPModelArguments,
 )
-from dataset import CustomDataset
+from dataset import CustomNLPDataset
 from torch.utils.data import DataLoader
 from transformers import (
     AutoModelForSequenceClassification,
@@ -27,7 +27,7 @@ def inference_cat1_nlp(dataset):
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name)
 
     dataset["cat1"] = [-1] * len(dataset)
-    test_dataset = CustomDataset(dataset["overview"], dataset["cat1"], tokenizer)
+    test_dataset = CustomNLPDataset(dataset["overview"], dataset["cat1"], tokenizer)
     dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
     model_path = os.path.join("./output/", model_args.project_cat1_name)
@@ -71,7 +71,7 @@ def inference_cat2_nlp(dataset):
 
     overview_fix = dataset["overview"] + "[RELATION]" + dataset["cat1"]
     dataset["cat2"] = [-1] * len(dataset)
-    test_dataset = CustomDataset(overview_fix, dataset["cat2"], tokenizer)
+    test_dataset = CustomNLPDataset(overview_fix, dataset["cat2"], tokenizer)
     dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
     model_path = os.path.join("./output/", model_args.project_cat2_name)
@@ -120,7 +120,7 @@ def inference_cat3_nlp(dataset):
         + dataset["cat2"]
     )
     dataset["cat3"] = [-1] * len(dataset)
-    test_dataset = CustomDataset(overview_fix, dataset["cat3"], tokenizer)
+    test_dataset = CustomNLPDataset(overview_fix, dataset["cat3"], tokenizer)
     dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
     model_path = os.path.join("./output/", model_args.project_cat3_name)

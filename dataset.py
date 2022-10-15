@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 import torch
 
 
-class CustomDataset(Dataset):
+class CustomNLPDataset(Dataset):
     def __init__(self, reviews, label, tokenizer):
         self.label = label.tolist()
         self.tokenized_sentence = tokenizer(
