@@ -32,4 +32,5 @@ class CNN(nn.Module):
 
     def forward(self, x):
         output = self.layer(x)
-        output = output.view()
+        output = torch.flatten(output, start_dim=1)
+        return output
