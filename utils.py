@@ -1,6 +1,10 @@
+import numpy as np
+import os
 import pandas as pd
 import pickle
+import random
 import re
+import torch
 
 from tqdm import tqdm
 
@@ -49,3 +53,13 @@ def preprocess_nlp(dataset: pd.DataFrame) -> pd.DataFrame:
         to_fix = re.sub("[^ 가-힣0-9a-zA-Z]", "", to_fix)
         dataset["overview"][idx] = to_fix
     return dataset
+
+
+def seed_everything(seed):
+    random.seed(seed)
+    os.environ["PYTHONASHSEED"] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True

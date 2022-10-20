@@ -1,15 +1,22 @@
+import albumentations as A
+import numpy as np
 import os
 import pandas as pd
 import torch
 import wandb
 
+from albumentations.pytorch.transforms import ToTensorV2
 from argument import (
     TrainNLPModelArguments,
     TrainingNLPArguments,
 )
-from dataset import CustomNLPDataset
+from dataset import CustomCVDataset, CustomNLPDataset
+from loss import create_criterion
+from model import CNN
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 from trainer import CustomTrainer
 from transformers import (
     AutoConfig,
@@ -120,6 +127,108 @@ def train_nlp(data: pd.DataFrame, cat_num: int):
     )
     wandb.finish()
     print(f"---{model_args.target_label.upper()} NLP TRAINING FINISH ---")
+
+
+def train_cv():
+    train = pd.read_csv("./data/train.csv")
+    CFG = {
+        "IMG_SIZE": 128,
+        "EPOCHS": 5,
+        "LEARNING_RATE": 3e-4,
+        "BATCH_SIZE": 64,
+        "SEED": 42,
+    }
+    train["cat1"] = label_to_num(train["cat1"], 1)
+    train_data, valid_data = train_test_split(
+        train, test_size=0.2, stratify=train["cat1"], random_state=CFG["SEED"]
+    )
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    train_transform = A.Compose(
+        [
+            A.Resize(CFG["IMG_SIZE"], CFG["IMG_SIZE"]),
+            A.Normalize(
+                mean=(0.485, 0.456, 0.406),
+                std=(0.229, 0.224, 0.225),
+                max_pixel_value=255.0,
+                always_apply=False,
+                p=1.0,
+            ),
+            ToTensorV2(),
+        ]
+    )
+    train_dataset = CustomCVDataset(
+        train_data["img_path"], train_data["cat1"], train_transform
+    )
+    train_loader = DataLoader(train_dataset, batch_size=CFG["BATCH_SIZE"], shuffle=True)
+    valid_dataset = CustomCVDataset(
+        valid_data["img_path"], valid_data["cat1"], train_transform
+    )
+    valid_loader = DataLoader(
+        valid_dataset, batch_size=CFG["BATCH_SIZE"], shuffle=False
+    )
+    criterion = create_criterion("focal")
+
+    best_score = 0
+    best_model = None
+    model = CNN()
+    model.to(device)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=CFG["LEARNING_RATE"])
+    scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer=optimizer, step_size=10, gamma=0.1, last_epoch=-1, verbose=False
+    )
+
+    for epoch in range(1, CFG["EPOCHS"] + 1):
+        model.train()
+        train_loss = []
+
+        for img, label in tqdm(iter(train_loader)):
+            img = img.float().to(device)
+            label = label.to(device)
+            optimizer.zero_grad()
+            model_pred = model(img)
+            loss = criterion(model_pred, label)
+
+            loss.backward()
+            optimizer.step()
+
+            train_loss.append(loss.item())
+
+        epoch_loss = np.mean(train_loss)
+
+        # validation
+        model.eval()
+        model_preds = []
+        true_labels = []
+        val_loss = []
+
+        with torch.no_grad():
+            for img, label in tqdm(iter(valid_loader)):
+                img = img.float().to(device)
+                label = label.to(device)
+
+                model_pred = model(img)
+                loss = criterion(model_pred, label)
+                val_loss.append(loss.item())
+
+                model_preds += model_pred.argmax(-1).detach().cpu().numpy().tolist()
+                true_labels += label.detach().cpu().numpy().tolist()
+
+        test_score = f1_score(true_labels, model_preds, average="weighted")
+        val_loss, val_score = np.mean(val_loss), test_score
+
+        print(
+            f"Epoch{epoch}: Train_loss:{epoch_loss:.5f} Val_loss:{val_loss:.5f} Val_score:{val_score:.5f}"
+        )
+
+        if scheduler is not None:
+            scheduler.step()
+
+        if best_score < val_score:
+            best_score = val_score
+            best_model = model
+
+    torch.save(best_model.state_dict(), "./output/cv_baseline")
+    return best_model
 
 
 def main():

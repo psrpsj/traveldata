@@ -29,16 +29,24 @@ class CustomNLPDataset(Dataset):
 
 
 class CustomCVDataset(Dataset):
-    def __init__(self, img_path_list, transform):
+    def __init__(self, img_path_list, label, transform, infer=False):
         self.img_path_list = img_path_list
         self.transform = transform
+        self.label = label
+        self.infer = infer
 
     def __getitem__(self, index):
-        img_path = self.img_path_list[index]
+        img_path = self.img_path_list.iloc[index]
         image = cv2.imread(img_path)
 
         if self.transform is not None:
             image = self.transform(image=image)["image"]
+
+        if self.infer:
+            return image
+        else:
+            label = self.label.iloc[index]
+            return image, label
 
     def __len__(self):
         return len(self.img_path_list)
