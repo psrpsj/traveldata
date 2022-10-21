@@ -90,7 +90,7 @@ def train_nlp(data: pd.DataFrame, cat_num: int):
             )
 
             train_view, valid_view = (
-                data["overivew"][train_index],
+                data["overview"][train_index],
                 data["overview"][valid_index],
             )
             train_label, valid_label = (
@@ -298,8 +298,11 @@ def train_cv():
 
 
 def main():
-    dataset = pd.read_csv("./data/train.csv")
-    dataset = preprocess_nlp(dataset, train=True)
+    if not os.path.exists("./data/train_fix.csv"):
+        dataset = pd.read_csv("./data/train.csv")
+        dataset = preprocess_nlp(dataset, train=True)
+    else:
+        dataset = pd.read_csv("./data/train_fix.csv")
     if not os.path.exists("./output/cat1_nlp"):
         train_nlp(dataset, 1)
     if not os.path.exists("./output/cat2_nlp"):
