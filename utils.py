@@ -6,6 +6,7 @@ import random
 import re
 import torch
 
+from konlpy.tag import Okt
 from tqdm import tqdm
 
 
@@ -45,13 +46,35 @@ def num_to_label(data: pd.Series, cat_num: int) -> pd.Series:
         return label_3.inverse_transform(data)
 
 
-def preprocess_nlp(dataset: pd.DataFrame) -> pd.DataFrame:
+def preprocess_nlp(dataset: pd.DataFrame, train: bool) -> pd.DataFrame:
+    f = open("./data/stopword.txt", encoding="UTF-8")
+    line = f.readlines()
+    stopwords = []
+
+    for l in line:
+        l = l.replace("\n", "")
+        stopwords.append(l)
+
     print("### Start Preprocess for Overview ###")
+    drop_list = []
     for idx in tqdm(range(len(dataset))):
         to_fix = dataset["overview"][idx]
         to_fix = re.sub("<.+?>", "", to_fix)
         to_fix = re.sub("[^ 가-힣0-9a-zA-Z]", "", to_fix)
-        dataset["overview"][idx] = to_fix
+
+        # Stopword
+        okt = Okt()
+        to_fix_morphs = okt.morphs(to_fix)
+        fixed_list = [w for w in to_fix_morphs if w not in stopwords]
+        to_fix_finish = " ".join(fixed_list)
+        if train and len(to_fix_finish) == 0:
+            drop_list.append(idx)
+        if not train and len(to_fix_finish) == 0:
+            to_fix_finish = to_fix
+        dataset["overview"][idx] = to_fix_finish
+
+    if train:
+        dataset.drop(drop_list)
     return dataset
 
 
