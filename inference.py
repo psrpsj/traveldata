@@ -6,9 +6,6 @@ import torch.nn.functional as F
 
 from argument import (
     TrainNLPModelArguments,
-    TrainCat1NLPModelArguments,
-    TrainCat2NLPModelArguments,
-    TrainCat3NLPModelArguments,
 )
 from dataset import CustomNLPDataset
 from torch.utils.data import DataLoader
