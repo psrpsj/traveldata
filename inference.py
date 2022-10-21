@@ -88,7 +88,7 @@ def inference_nlp(dataset: pd.DataFrame, cat_num: int) -> pd.DataFrame:
 
 def main():
     dataset = pd.read_csv("./data/test.csv")
-    dataset = preprocess_nlp(dataset)
+    dataset = preprocess_nlp(dataset, train=False)
     if "cat1" not in dataset.columns.tolist():
         dataset = inference_nlp(dataset, 1)
     if "cat2" not in dataset.columns.tolist():

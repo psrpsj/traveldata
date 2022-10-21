@@ -55,7 +55,7 @@ def train_nlp(data: pd.DataFrame, cat_num: int):
             data["overview"] + "[RELATION]" + data["cat1"] + "[RELATION]" + data["cat2"]
         )
 
-    print(f"### Training NLP Model for {model_args.target_label}")
+    print(f"### Training NLP Model for {model_args.target_label} ###")
     print(f"Current model is {model_args.model_name}")
     print(f"Current device is {device}")
 
@@ -105,10 +105,6 @@ def train_nlp(data: pd.DataFrame, cat_num: int):
     )
     valid = CustomNLPDataset(
         valid_dataset["overview"], valid_dataset[model_args.target_label], tokenizer
-    )
-    model_config.num_labels = 128
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_args.model_name, config=model_config
     )
 
     trainer = CustomTrainer(
@@ -233,7 +229,7 @@ def train_cv():
 
 def main():
     dataset = pd.read_csv("./data/train.csv")
-    dataset = preprocess_nlp(dataset)
+    dataset = preprocess_nlp(dataset, train=True)
     if not os.path.exists("./output/cat1_nlp"):
         train_nlp(dataset, 1)
     if not os.path.exists("./output/cat2_nlp"):
