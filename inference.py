@@ -6,11 +6,8 @@ import torch.nn.functional as F
 
 from argument import (
     TrainNLPModelArguments,
-    TrainCat1NLPModelArguments,
-    TrainCat2NLPModelArguments,
-    TrainCat3NLPModelArguments,
 )
-from dataset import CustomDataset
+from dataset import CustomNLPDataset
 from torch.utils.data import DataLoader
 from transformers import (
     AutoModelForSequenceClassification,
@@ -49,7 +46,7 @@ def inference_nlp(dataset: pd.DataFrame, cat_num: int) -> pd.DataFrame:
         )
 
     dataset[model_args.target_label] = [-1] * len(dataset)
-    test_dataset = CustomDataset(
+    test_dataset = CustomNLPDataset(
         overview_fix, dataset[model_args.target_label], tokenizer
     )
     dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
