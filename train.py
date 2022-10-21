@@ -14,7 +14,7 @@ from dataset import CustomCVDataset, CustomNLPDataset
 from loss import create_criterion
 from model import CNN
 from sklearn.metrics import accuracy_score, f1_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from trainer import CustomTrainer
@@ -49,7 +49,7 @@ def train_nlp(data: pd.DataFrame, cat_num: int):
         model_args.target_label = "cat2"
         data["overview"] = data["overview"] + "[RELATION]" + data["cat1"]
     elif cat_num == 3:
-        model_args.project_name = "_cat3_nlp"
+        model_args.project_name += "_cat3_nlp"
         model_args.target_label = "cat3"
         data["overview"] = (
             data["overview"] + "[RELATION]" + data["cat1"] + "[RELATION]" + data["cat2"]
@@ -65,64 +65,134 @@ def train_nlp(data: pd.DataFrame, cat_num: int):
     special_tokens_dict = {"additional_special_tokens": ["[RELATION]"]}
     tokenizer.add_special_tokens(special_tokens_dict)
     set_seed(training_args.seed)
-    model_config = AutoConfig.from_pretrained(
-        pretrained_model_name_or_path=model_args.model_name
-    )
-    if cat_num == 1:
-        model_config.num_labels = 6
-    elif cat_num == 2:
-        model_config.num_labels = 18
-    elif cat_num == 3:
-        model_config.num_labels = 128
 
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_args.model_name, config=model_config
-    )
-    model.resize_token_embeddings(len(tokenizer))
-    model.to(device)
-    model.train()
+    # K-Fold
+    if model_args.k_fold:
+        print("---- START K-FOLD ----")
+        fold = 1
+        k_fold = StratifiedKFold(n_splits=5, shuffle=False)
+        for train_index, valid_index in k_fold.split(
+            data["overview"], data[model_args.target_label]
+        ):
+            wandb.init(
+                entity="psrpsj",
+                project="traveldata",
+                name=model_args.project_name + "_kfold_" + str(fold),
+                tags=[model_args.model_name],
+            )
+            wandb.config.update(training_args)
 
-    wandb.init(
-        entity="psrpsj",
-        project="traveldata",
-        name=model_args.project_name,
-        tags=[model_args.model_name],
-    )
-    wandb.config.update(training_args)
-    train_dataset, valid_dataset = train_test_split(
-        data, test_size=0.2, stratify=data[model_args.target_label], random_state=42
-    )
+            print(f"---- Fold {fold} start ----")
+            output_dir = os.path.join(
+                training_args.output_dir,
+                model_args.project_name + "_kfold",
+                "fold" + str(fold),
+            )
 
-    train_dataset[model_args.target_label] = label_to_num(
-        train_dataset[model_args.target_label], cat_num
-    )
-    valid_dataset[model_args.target_label] = label_to_num(
-        valid_dataset[model_args.target_label], cat_num
-    )
+            train_view, valid_view = (
+                data["overivew"][train_index],
+                data["overview"][valid_index],
+            )
+            train_label, valid_label = (
+                data[model_args.target_label][train_index],
+                data[model_args.target_label][valid_index],
+            )
+            train_label = label_to_num(train_label, cat_num)
+            valid_label = label_to_num(valid_label, cat_num)
 
-    train = CustomNLPDataset(
-        train_dataset["overview"], train_dataset[model_args.target_label], tokenizer
-    )
-    valid = CustomNLPDataset(
-        valid_dataset["overview"], valid_dataset[model_args.target_label], tokenizer
-    )
+            train = CustomNLPDataset(train_view, train_label, tokenizer)
+            valid = CustomNLPDataset(valid_view, valid_label, tokenizer)
 
-    trainer = CustomTrainer(
-        loss_name=model_args.loss_name,
-        model=model,
-        args=training_args,
-        train_dataset=train,
-        eval_dataset=valid,
-        compute_metrics=compute_metrics,
-    )
+            model_config = AutoConfig.from_pretrained(
+                pretrained_model_name_or_path=model_args.model_name
+            )
+            if cat_num == 1:
+                model_config.num_labels = 6
+            elif cat_num == 2:
+                model_config.num_labels = 18
+            elif cat_num == 3:
+                model_config.num_labels = 128
 
-    print(f"---{model_args.target_label.upper()} NLP TRAINING ---")
-    trainer.train()
-    model.save_pretrained(
-        os.path.join(training_args.output_dir, model_args.project_name)
-    )
-    wandb.finish()
-    print(f"---{model_args.target_label.upper()} NLP TRAINING FINISH ---")
+            model = AutoModelForSequenceClassification.from_pretrained(
+                model_args.model_name, config=model_config
+            )
+            model.resize_token_embeddings(len(tokenizer))
+            model.to(device)
+            model.train()
+
+            trainer = CustomTrainer(
+                loss_name=model_args.loss_name,
+                model=model,
+                args=training_args,
+                train_dataset=train,
+                eval_dataset=valid,
+                compute_metrics=compute_metrics,
+            )
+            trainer.train()
+            model.save_pretrained(output_dir)
+            wandb.finish()
+            fold += 1
+            print(f"---- Fold {fold} finish ----")
+
+    else:
+        model_config = AutoConfig.from_pretrained(
+            pretrained_model_name_or_path=model_args.model_name
+        )
+        if cat_num == 1:
+            model_config.num_labels = 6
+        elif cat_num == 2:
+            model_config.num_labels = 18
+        elif cat_num == 3:
+            model_config.num_labels = 128
+
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_args.model_name, config=model_config
+        )
+        model.resize_token_embeddings(len(tokenizer))
+        model.to(device)
+        model.train()
+
+        wandb.init(
+            entity="psrpsj",
+            project="traveldata",
+            name=model_args.project_name,
+            tags=[model_args.model_name],
+        )
+        wandb.config.update(training_args)
+        train_dataset, valid_dataset = train_test_split(
+            data, test_size=0.2, stratify=data[model_args.target_label], random_state=42
+        )
+
+        train_dataset[model_args.target_label] = label_to_num(
+            train_dataset[model_args.target_label], cat_num
+        )
+        valid_dataset[model_args.target_label] = label_to_num(
+            valid_dataset[model_args.target_label], cat_num
+        )
+
+        train = CustomNLPDataset(
+            train_dataset["overview"], train_dataset[model_args.target_label], tokenizer
+        )
+        valid = CustomNLPDataset(
+            valid_dataset["overview"], valid_dataset[model_args.target_label], tokenizer
+        )
+
+        trainer = CustomTrainer(
+            loss_name=model_args.loss_name,
+            model=model,
+            args=training_args,
+            train_dataset=train,
+            eval_dataset=valid,
+            compute_metrics=compute_metrics,
+        )
+
+        print(f"---{model_args.target_label.upper()} NLP TRAINING ---")
+        trainer.train()
+        model.save_pretrained(
+            os.path.join(training_args.output_dir, model_args.project_name)
+        )
+        wandb.finish()
+        print(f"---{model_args.target_label.upper()} NLP TRAINING FINISH ---")
 
 
 def train_cv():
