@@ -10,6 +10,7 @@ from argument import (
 from dataset import CustomNLPDataset
 from torch.utils.data import DataLoader
 from transformers import (
+    AutoModel,
     AutoModelForSequenceClassification,
     AutoTokenizer,
     HfArgumentParser,
@@ -51,44 +52,82 @@ def inference_nlp(dataset: pd.DataFrame, cat_num: int) -> pd.DataFrame:
     )
     dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-    model_path = os.path.join("./output/", model_args.project_name)
-    model = AutoModelForSequenceClassification.from_pretrained(model_path)
-    model.resize_token_embeddings(len(tokenizer))
-    model.to(device)
-    model.eval()
+    if model_args.k_fold:
+        pred_prob = []
+        for fold_num in range(1, 6):
+            print(f"---- START INFERENCE FOLD {fold_num} ----")
+            model_path = os.path.join(
+                "./output/", model_args.project_name + "_kfold", "fold" + str(fold_num)
+            )
+            model = AutoModelForSequenceClassification.from_pretrained(model_path)
+            model.resize_token_embeddings(len(tokenizer))
+            model.to(device)
+            model.eval()
 
-    output_prob = []
-    output_pred = []
+            output_prob = []
 
-    print(f"### Inference for {model_args.target_label.upper()} NLP ###")
-    for data in tqdm(dataloader):
-        output = model(
-            input_ids=data["input_ids"].to(device),
-            attention_mask=data["attention_mask"].to(device),
-            token_type_ids=data["token_type_ids"].to(device),
-        )
-        logit = output[0]
-        prob = F.softmax(logit, dim=-1).detach().cpu().numpy()
-        logit = logit.detach().cpu().numpy()
-        result = np.argmax(logit, axis=-1)
-        output_pred.append(result)
-        output_prob.append(prob)
+            for data in tqdm(dataloader):
+                with torch.no_grad():
+                    outputs = model(
+                        input_ids=data["input_ids"].to(device),
+                        attention_mask=data["attention_mask"].to(device),
+                        token_type_ids=data["token_type_ids"].to(device),
+                    )
+                    logits = outputs[0]
+                    prob = F.softmax(logits, dim=-1).detach().cpu().numpy()
+                    output_prob.append(prob)
+            output_prob = np.concatenate(output_prob, axis=0).tolist()
+            pred_prob.append(output_prob)
 
-    pred_answer = np.concatenate(output_pred).tolist()
-    output_prob = np.concatenate(output_prob, axis=0).tolist()
-    dataset[model_args.target_label] = num_to_label(pred_answer, cat_num)
-    dataset.to_csv("./data/test_fix.csv", index=False)
+        pred_prob = np.sum(pred_prob, axis=0) / 5
+        pred_answer = np.argsmax(pred_prob, axis=-1)
+        dataset[model_args.target_label] = num_to_label(pred_answer, cat_num)
+        dataset.to_csv("./data/test_made.csv", index=False)
+
+    else:
+        model_path = os.path.join("./output/", model_args.project_name)
+        model = AutoModelForSequenceClassification.from_pretrained(model_path)
+        model.resize_token_embeddings(len(tokenizer))
+        model.to(device)
+        model.eval()
+
+        output_prob = []
+        output_pred = []
+
+        print(f"### Inference for {model_args.target_label.upper()} NLP ###")
+        for data in tqdm(dataloader):
+            output = model(
+                input_ids=data["input_ids"].to(device),
+                attention_mask=data["attention_mask"].to(device),
+                token_type_ids=data["token_type_ids"].to(device),
+            )
+            logit = output[0]
+            prob = F.softmax(logit, dim=-1).detach().cpu().numpy()
+            logit = logit.detach().cpu().numpy()
+            result = np.argmax(logit, axis=-1)
+            output_pred.append(result)
+            output_prob.append(prob)
+
+        pred_answer = np.concatenate(output_pred).tolist()
+        output_prob = np.concatenate(output_prob, axis=0).tolist()
+        dataset[model_args.target_label] = num_to_label(pred_answer, cat_num)
+        dataset.to_csv("./data/test_made.csv", index=False)
+
+        print(f"### Inference for {model_args.target_label.upper()} NLP Finish! ###")
+
     if cat_num == 3:
         submission = pd.DataFrame({"id": dataset["id"], "cat3": dataset["cat3"]})
         submission.to_csv("./output/submission.csv", index=False)
-
-    print(f"### Inference for {model_args.target_label.upper()} NLP Finish! ###")
     return dataset
 
 
 def main():
-    dataset = pd.read_csv("./data/test.csv")
-    dataset = preprocess_nlp(dataset, train=False)
+    if not os.path.exists("./data/test_fix.csv"):
+        dataset = pd.read_csv("./data/test.csv")
+        dataset = preprocess_nlp(dataset, train=False)
+        dataset.to_csv("./data/test_fix.csv")
+    else:
+        dataset = pd.read_csv("./data/test_fix.csv")
     if "cat1" not in dataset.columns.tolist():
         dataset = inference_nlp(dataset, 1)
     if "cat2" not in dataset.columns.tolist():
