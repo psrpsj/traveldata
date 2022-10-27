@@ -304,10 +304,8 @@ def main():
         dataset.to_csv("./data/train_fix.csv")
     else:
         dataset = pd.read_csv("./data/train_fix.csv")
-    if not os.path.exists("./output/cat1_nlp"):
-        train_nlp(dataset, 1)
-    if not os.path.exists("./output/cat2_nlp"):
-        train_nlp(dataset, 2)
+    train_nlp(dataset, 1)
+    train_nlp(dataset, 2)
     train_nlp(dataset, 3)
 
 

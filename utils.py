@@ -59,8 +59,11 @@ def preprocess_nlp(dataset: pd.DataFrame, train: bool) -> pd.DataFrame:
     drop_list = []
     for idx in tqdm(range(len(dataset))):
         to_fix = dataset["overview"][idx]
-        to_fix = re.sub("<.+?>", "", to_fix)
-        to_fix = re.sub("[^ 가-힣0-9a-zA-Z]", "", to_fix)
+        to_fix = " ".join(to_fix.split())
+        to_fix_sub = re.sub("<.+?>", "", to_fix)
+        if len(to_fix) == 0:
+            to_fix_sub = to_fix
+        to_fix = re.sub("[^ 가-힣0-9a-zA-Z]", "", to_fix_sub)
 
         # Stopword
         okt = Okt()
