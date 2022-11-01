@@ -10,13 +10,13 @@ DACON 2022 관광데이터 AI 경진대회
 
 ## 2. Code Structure
 ``` text
-├── data
+├── data (not in repo)
 |   ├── image
 |   |    ├── train
 |   |    └── test
 |   ├── stopword.txt
-|   ├── train.csv (not in repo)
-|   └── test.csv  (not in repo)
+|   ├── train.csv 
+|   └── test.csv  
 ├── argument.py
 ├── backtranslation.ipynb
 ├── cat1_label.pkl
