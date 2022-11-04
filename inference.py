@@ -10,7 +10,6 @@ from argument import (
 from dataset import CustomNLPDataset
 from torch.utils.data import DataLoader
 from transformers import (
-    AutoModel,
     AutoModelForSequenceClassification,
     AutoTokenizer,
     HfArgumentParser,
