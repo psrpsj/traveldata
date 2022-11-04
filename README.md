@@ -46,5 +46,6 @@ DACON 2022 관광데이터 AI 경진대회
   - Inference
     - 각 Fold model의 inference 과정을 거친후 나온 softmax 확률을 soft-voting 과정을 거쳐 최종추론 함.
   - 최종성적
-    - Public Score: 0.6972 (22th/549)
-    - Private Score: 0.69968(24th/549)
+    - 대회기간 중 성적
+      - Public Score: 0.82864
+      - Private Score: 0.827

@@ -1,7 +1,6 @@
-from unicodedata import bidirectional
-import numpy
 import torch
 import torch.nn as nn
+
 from transformers import (
     AutoModelForSequenceClassification,
     BertPreTrainedModel,
