@@ -52,6 +52,9 @@ def inference_nlp(dataset: pd.DataFrame, cat_num: int) -> pd.DataFrame:
     dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
     if model_args.k_fold:
+        print(
+            f"### Inference for {model_args.target_label.upper()} NLP with K-fold ###"
+        )
         pred_prob = []
         for fold_num in range(1, 6):
             print(f"---- START INFERENCE FOLD {fold_num} ----")
@@ -79,7 +82,7 @@ def inference_nlp(dataset: pd.DataFrame, cat_num: int) -> pd.DataFrame:
             pred_prob.append(output_prob)
 
         pred_prob = np.sum(pred_prob, axis=0) / 5
-        pred_answer = np.argsmax(pred_prob, axis=-1)
+        pred_answer = np.argmax(pred_prob, axis=-1)
         dataset[model_args.target_label] = num_to_label(pred_answer, cat_num)
         dataset.to_csv("./data/test_made.csv", index=False)
 
@@ -93,7 +96,9 @@ def inference_nlp(dataset: pd.DataFrame, cat_num: int) -> pd.DataFrame:
         output_prob = []
         output_pred = []
 
-        print(f"### Inference for {model_args.target_label.upper()} NLP ###")
+        print(
+            f"### Inference for {model_args.target_label.upper()} NLP with Non K-fold ###"
+        )
         for data in tqdm(dataloader):
             output = model(
                 input_ids=data["input_ids"].to(device),
