@@ -1,4 +1,5 @@
 # traveldata
+[Report](https://sangryu-notes.notion.site/2022-AI-e369840c87b5440da0bbb04ae0eb71c4)
 DACON 2022 관광데이터 AI 경진대회
 ## 1. Project Overview
   - 목표
